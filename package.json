@@ -1,0 +1,19 @@
+{
+  "name": "vclib",
+  "version": "0.0.1",
+  "description": "Library for parsing and creating packets for the vc0706 camera",
+  "main": "vclib.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha test/test.js"
+  },
+  "author": "@jonmckay",
+  "license": "MIT",
+  "devDependencies" : {
+    "mocha" : "*",
+    "chai" : "*"
+  },
+  "readmeFilename":"README.md"
+}
