@@ -125,19 +125,15 @@ vclib.prototype.parseIncoming = function(commandPacket, incomingBytes, callback)
 
             return callback && callback(null, packet);
 
-            if (DEBUG) console.log("added packet: ", packet);
           }
           else {
-            console.log('Warning, packet creation was obstructed somehow.');
+            console.warn('Warning, packet creation was obstructed somehow.');
           }
         }
       }
     }
-
     callback(null, null);
-  }
-
-  
+  }  
 }
 
 vclib.prototype.getCommandPacket = function(commandString, args, callback) {
@@ -222,6 +218,23 @@ function readFramePacket(args, id) {
   this.buffer = Buffer.concat([this.buffer, lenBuf, delayBuf]);
 }
 
+function readFrameSPIPacket(args, id) {
+
+  var length = args.length || 0;
+
+  CommandPacket.call(this, 'readFrameSPI', id, length);
+
+  var delay = args.delay || 100;
+
+  var delayBuf = new Buffer(2);
+  delayBuf.writeUInt16BE(delay, 0);
+
+  var lenBuf = new Buffer(4);
+  lenBuf.writeUInt32BE(length, 0);
+
+  this.buffer = new Buffer([0x56, 0x00, this.commandID, 0x0C, 0x00, 0x0F, 0x00, 0x00, 0x00, 0x00]);
+  this.buffer = Buffer.concat([this.buffer, lenBuf, new Buffer([0xFF, 0xFF])]);
+}
 function baudratePacket(args, id) {
   CommandPacket.call(this, 'baudrate', id, 0x06);
 
@@ -238,17 +251,17 @@ function resolutionPacket(args, id) {
   CommandPacket.call(this, 'resolution', id, 0x05);
 
   var size = args.size || 'vga';
+  size = size.toLowerCase();
 
-  switch (size.toLowerCase()){
-    case('qvga'):
-      size = 0x11;
-      break;
-    case ('qqvga'):
-      size = 0x22;
-      break;
-    default:
-      size = 0x00;
-      break;
+  // TODO: use switch/case once tessel/beta#181 is fixed
+  if (size === 'qvga') {
+    size = 0x11;
+  }
+  else if (size === 'qqvga') {
+    size = 0x22;
+  }
+  else {
+    size = 0x00;
   }
 
   this.buffer = new Buffer([0x56, 0x00, this.commandID, this.dataLen, 0x04, 0x01, 0x00, 0x19, size]);
@@ -272,10 +285,11 @@ vclib.api = {
   'reset' : {resolve: systemResetResolve, construct:resetPacket, commandID:0x26},
   'frameControl' : {resolve: bufControlResolve, construct:frameControlPacket, commandID:0x36},
   'bufferLength' : {resolve: bufLengthResolve, construct:bufferLengthPacket, commandID:0x34},
-  'readFrame' : {resolve: readbufResolve, construct:readFramePacket, commandID:0x32},
+  'readFrame' : {resolve: readBufResolve, construct:readFramePacket, commandID:0x32},
+  'readFrameSPI' : {resolve: readBufSPIResolve, construct:readFrameSPIPacket, commandID:0x32},
   'baudrate' : {resolve: setBaudrateResolve, construct:baudratePacket, commandID:0x31},
-  'resolution' : {resolve: versionResolve, construct:resolutionPacket, commandID:0x31},
-  'compression' : {resolve: versionResolve, construct:compressionPacket, commandID:0x31},
+  'resolution' : {resolve: setResolutionResolve, construct:resolutionPacket, commandID:0x31},
+  'compression' : {resolve: setCompressionResolve, construct:compressionPacket, commandID:0x31},
 }
 
 var baudrates = {
@@ -283,7 +297,7 @@ var baudrates = {
   19200 : 0x56E4,
   38400 : 0x2AF2,
   57600 : 0x1C4C,
-  115200 : 0x0DA6,
+  115200 : 0x0DA6
 }
 
 function versionResolve(payload) {
@@ -302,16 +316,24 @@ function bufLengthResolve(payload) {
   return payload.readUInt32BE(0);
 }
 
-function readbufResolve(payload) {
+function readBufResolve(payload) {
   return payload;
+}
+
+function readBufSPIResolve(payload) {
+  return "Begin Reading Over SPI";
 }
 
 function setBaudrateResolve(payload) {
   return "Baudrate Set."
 }
 
-function setResolution(payload) {
+function setResolutionResolve(payload) {
+  return "Resolution Set."
+}
 
+function setCompressionResolve(payload) {
+  return "Compression Set."
 }
 
 function ResponsePacket(name, payload) {
