@@ -258,10 +258,10 @@ function resolutionPacket(args, id) {
     size = 0x11;
   }
   else if (size === 'qqvga') {
-    size = 0x22;
+    size = 0x00;
   }
   else {
-    size = 0x00;
+    size = 0x22;
   }
 
   this.buffer = new Buffer([0x56, 0x00, this.commandID, this.dataLen, 0x04, 0x01, 0x00, 0x19, size]);

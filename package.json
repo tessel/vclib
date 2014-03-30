@@ -1,6 +1,6 @@
 {
   "name": "vclib",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "Library for parsing and creating packets for the vc0706 camera",
   "main": "vclib.js",
   "directories": {
