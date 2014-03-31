@@ -182,7 +182,7 @@ function resetPacket(args, id) {
 function frameControlPacket(args, id) {
   CommandPacket.call(this, 'frameControl', id, 0x01);
 
-  var param = args.controlParam;
+  var param = args.command;
 
   if (param === 'resume') {
     param = 3;
@@ -258,10 +258,10 @@ function resolutionPacket(args, id) {
     size = 0x11;
   }
   else if (size === 'qqvga') {
-    size = 0x00;
+    size = 0x22;
   }
   else {
-    size = 0x22;
+    size = 0x00;
   }
 
   this.buffer = new Buffer([0x56, 0x00, this.commandID, this.dataLen, 0x04, 0x01, 0x00, 0x19, size]);
@@ -270,13 +270,15 @@ function resolutionPacket(args, id) {
 function compressionPacket(args, id) {
   CommandPacket.call(this, 'compression', id, 0x05);
 
-  var ratio = args.ratio || 0x35;
-
-  if (ratio > 255) {
-    ratio = 255;
+  if (args.ratio === undefined || args.ratio === null) {
+    args.ratio = 0x35;
   }
 
-  this.buffer = new Buffer([0x56, 0x00, this.commandID, this.dataLen, 0x04, 0x01, 0x00, 0x1a, ratio]);
+  if (args.ratio > 255) {
+    args.ratio = 255;
+  }
+
+  this.buffer = new Buffer([0x56, 0x00, this.commandID, this.dataLen, 0x04, 0x01, 0x00, 0x1a, args.ratio]);
 }
 
 

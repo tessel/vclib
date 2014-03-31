@@ -38,7 +38,7 @@ getCommandPacket('reset')
   Stop or resume frame capture
   controlString can be 'stop' or 'resume'. Default is stop.
 */
-getCommandPacket('frameControl', {'frameControl': controlstring},  function(err, packet) {...} );
+getCommandPacket('frameControl', {'command': controlstring},  function(err, packet) {...} );
 
 /*
   Get the length of captured buffer

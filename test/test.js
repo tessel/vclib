@@ -49,7 +49,7 @@ describe("Packet Generation", function() {
   });
 
   it("Should generate a valid frame control packet with the resume option", function() {
-    vclib.getCommandPacket('frameControl',{'controlParam':'resume'}, function(err, packet) {
+    vclib.getCommandPacket('frameControl',{'command':'resume'}, function(err, packet) {
       should.not.exist(err);
       should.exist(packet);
       (function () {
