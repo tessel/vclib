@@ -1,5 +1,7 @@
 var DEBUG = false;
 
+var headerSize = 5;
+
 function vclib() {
   this.rxBuffer = [];
   this.rxBufferPos = 0;
@@ -49,6 +51,7 @@ vclib.prototype.parseIncomingImageData = function(commandPacket, incomingBytes, 
           this.rxDataLen = 0;
 
           var packet = new ResponsePacket(commandPacket.name, imageData);
+
           return callback && callback(null, packet);
         }
       }
@@ -56,15 +59,15 @@ vclib.prototype.parseIncomingImageData = function(commandPacket, incomingBytes, 
     }
   }
   return callback && callback();
-}
+};
 
 vclib.prototype.validImagePacketTerminus = function() {
-  return (this.rxBuffer[0] === 0x76
-    && this.rxBuffer[1] === 0x00
-    && this.rxBuffer[2] === 0x32
-    && this.rxBuffer[3] === 0x00
-    && this.rxBuffer[4] === 0x00) 
-}
+  return (this.rxBuffer[0] === 0x76 &&
+      this.rxBuffer[1] === 0x00 &&
+      this.rxBuffer[2] === 0x32 &&
+      this.rxBuffer[3] === 0x00 &&
+      this.rxBuffer[4] === 0x00); 
+};
 
 // Parse bytes as they come in
 // The API is stupid so we have to supply a command that we're looking for a response to
@@ -84,7 +87,9 @@ vclib.prototype.parseIncoming = function(commandPacket, incomingBytes, callback)
       // If this is the beginning of the packet
       if (this.rxBufferPos === 0 && ch != 0x76) {
 
-        return callback && callback(new Error("Packet Frame Issue."));
+        if (callback) callback(new Error("Packet Frame Issue. Start byte should be 0x76 but is instead " + ch.toString()));
+
+        return;
       }
       else {
         // Add the byte to the rx Buffer
@@ -92,38 +97,41 @@ vclib.prototype.parseIncoming = function(commandPacket, incomingBytes, callback)
 
           // If this it the command id byte
           if (this.rxBufferPos === 3 && ch != commandPacket.commandID) {
-            return callback && callback(new Error("Invalid response. Wrong Command ID"));
+
+            if (callback) callback(new Error("Invalid response. Wrong Command ID"));
+
+            return;
           }
 
         // If this is the "length" byte
-          if (this.rxBufferPos === 5) {
+          if (this.rxBufferPos === headerSize) {
 
             // store expected packet length so we know when this packet is complete
             this.rxDataLen = ch;
 
-            if (this.rxDataLen != 0) {
+            if (this.rxDataLen !== 0) {
               continue;
             }
           }
 
         // If the packet is completed (data + header size)
-        if (this.rxBufferPos === this.rxDataLen + 5) {
+        if (this.rxBufferPos === this.rxDataLen + headerSize) {
           // just received last expected bytes
           // reset RX packet buffer position to be ready for new packet
           this.rxBufferPos = 0;
 
-          var payload = new Buffer(this.rxDataLen);
-
-          for (var j = 0; j < this.rxDataLen; j++) {
-            payload[j] = this.rxBuffer[5 + j];
-          }
+          var payload = new Buffer(this.rxBuffer.splice(this.rxBuffer.length - this.rxDataLen, this.rxDataLen));
+          // Remove the header as well
+          this.rxBuffer.splice(this.rxBuffer.length -headerSize, headerSize);
 
           var packet = new ResponsePacket(commandPacket.name, payload);
 
           // If we successfully created the packet
           if (packet) {
 
-            return callback && callback(null, packet);
+            if (callback) callback(null, packet);
+
+            return;
 
           }
           else {
@@ -134,7 +142,7 @@ vclib.prototype.parseIncoming = function(commandPacket, incomingBytes, callback)
     }
     callback(null, null);
   }  
-}
+};
 
 vclib.prototype.getCommandPacket = function(commandString, args, callback) {
 
@@ -153,13 +161,17 @@ vclib.prototype.getCommandPacket = function(commandString, args, callback) {
     // Create it with provided args
     var packet = new command.construct(args, command.commandID);
     // Return packet
-    return callback && callback(null, packet);
+    if (callback) callback(null, packet);
+
+    return;
   }
   else {
     // Return error
-    return callback && callback(new Error("Invalid Command."));
+    if (callback) callback(new Error("Invalid Command."));
+
+    return;
   }
-}
+};
 
 function CommandPacket(name, id, dataLen) {
   this.name = name;
@@ -292,7 +304,7 @@ vclib.api = {
   'baudrate' : {resolve: setBaudrateResolve, construct:baudratePacket, commandID:0x31},
   'resolution' : {resolve: setResolutionResolve, construct:resolutionPacket, commandID:0x31},
   'compression' : {resolve: setCompressionResolve, construct:compressionPacket, commandID:0x31},
-}
+};
 
 var baudrates = {
   9600 : 0xAEC8,
@@ -300,7 +312,7 @@ var baudrates = {
   38400 : 0x2AF2,
   57600 : 0x1C4C,
   115200 : 0x0DA6
-}
+};
 
 function versionResolve(payload) {
   return payload.toString();
@@ -327,15 +339,15 @@ function readBufSPIResolve(payload) {
 }
 
 function setBaudrateResolve(payload) {
-  return "Baudrate Set."
+  return "Baudrate Set.";
 }
 
 function setResolutionResolve(payload) {
-  return "Resolution Set."
+  return "Resolution Set.";
 }
 
 function setCompressionResolve(payload) {
-  return "Compression Set."
+  return "Compression Set.";
 }
 
 function ResponsePacket(name, payload) {
