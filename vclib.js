@@ -306,6 +306,12 @@ vclib.api = {
   'compression' : {resolve: setCompressionResolve, construct:compressionPacket, commandID:0x31},
 };
 
+vclib.resolutions = {
+  'vga' : [640,320],
+  'qvga' : [320,240],
+  'qqvga' : [160,120]
+};
+
 var baudrates = {
   9600 : 0xAEC8,
   19200 : 0x56E4,
