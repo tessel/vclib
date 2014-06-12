@@ -279,6 +279,12 @@ function resolutionPacket(args, id) {
   this.buffer = new Buffer([0x56, 0x00, this.commandID, this.dataLen, 0x04, 0x01, 0x00, 0x19, size]);
 }
 
+function getResolutionPacket(args, id) {
+  CommandPacket.call(this, 'getResolution', id, 0x04);
+
+  this.buffer = new Buffer([0x56, 0x00, this.commandID, this.dataLen, 0x04, 0x01, 0x00, 0x19]);
+}
+
 function compressionPacket(args, id) {
   CommandPacket.call(this, 'compression', id, 0x05);
 
@@ -293,6 +299,11 @@ function compressionPacket(args, id) {
   this.buffer = new Buffer([0x56, 0x00, this.commandID, this.dataLen, 0x04, 0x01, 0x00, 0x1a, args.ratio]);
 }
 
+function getCompressionPacket(args, id) {
+  CommandPacket.call(this, 'getCompression', id, 0x04);
+
+  this.buffer = new Buffer([0x56, 0x00, this.commandID, this.dataLen, 0x01, 0x01, 0x12, 0x04]);
+}
 
 vclib.api = {
   'version': {resolve: versionResolve, construct:versionPacket, commandID:0x11},
@@ -303,7 +314,9 @@ vclib.api = {
   'readFrameSPI' : {resolve: readBufSPIResolve, construct:readFrameSPIPacket, commandID:0x32},
   'baudrate' : {resolve: setBaudrateResolve, construct:baudratePacket, commandID:0x31},
   'resolution' : {resolve: setResolutionResolve, construct:resolutionPacket, commandID:0x31},
+  'getResolution': {resolve: getResolutionResolve, construct:getResolutionPacket, commandID:0x30},
   'compression' : {resolve: setCompressionResolve, construct:compressionPacket, commandID:0x31},
+  'getCompression' : {resolve: getCompressionResolve, construct:getCompressionPacket, commandID:0x30},
 };
 
 vclib.resolutions = {
@@ -352,8 +365,16 @@ function setResolutionResolve(payload) {
   return "Resolution Set.";
 }
 
+function getResolutionResolve(payload) {
+  return payload.readUInt8(0);
+}
+
 function setCompressionResolve(payload) {
   return "Compression Set.";
+}
+
+function getCompressionResolve(payload) {
+  return payload.readUInt8(0);
 }
 
 function ResponsePacket(name, payload) {
